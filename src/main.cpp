@@ -14,8 +14,8 @@ DHT dht1(DHTPIN1, DHTTYPE);
 DHT dht2(DHTPIN2, DHTTYPE);
 
 // WiFi
-const char *ssid = "<network ssid>";
-const char *password = "<password>";
+const char *ssid = "<wifi name>";
+const char *password = "<wifi password>";
 
 // MQTT
 const char *mqtt_server = "<server address>";
