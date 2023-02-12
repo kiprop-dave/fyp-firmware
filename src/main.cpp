@@ -1,8 +1,8 @@
 #include <Arduino.h>
-#include <WiFi.h>
 #include <ArduinoJson.h>
-#include <PubSubClient.h>
 #include <DHT.h>
+#include <PubSubClient.h>
+#include <WiFi.h>
 
 // Define two pins for DHT sensor
 #define DHTPIN1 4
@@ -36,27 +36,23 @@ unsigned long lastRead = 0;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-void callback(char *topic, byte *payload, unsigned int length)
-{
+void callback(char *topic, byte *payload, unsigned int length) {
   // Check if message says "siren on" and turn on led
 
   Serial.print("Message arrived on topic: ");
   Serial.println(topic);
 
   String message = "";
-  for (int i = 0; i < length; i++)
-  {
+  for (int i = 0; i < length; i++) {
     message += (char)payload[i];
   }
-  if (message == "siren on")
-  {
+  if (message == "siren on") {
     Serial.println("Siren on");
     digitalWrite(ledPin, HIGH);
   }
 }
 
-void setup_wifi()
-{
+void setup_wifi() {
   delay(10);
   // We start by connecting to a WiFi network
   Serial.println();
@@ -65,8 +61,7 @@ void setup_wifi()
 
   WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
@@ -80,21 +75,16 @@ void setup_wifi()
 }
 
 // connect to MQTT server
-void reconnect()
-{
+void reconnect() {
   // Loop until we're reconnected
-  while (!client.connected())
-  {
+  while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("ESP32Client", mqtt_user, mqtt_password))
-    {
+    if (client.connect("ESP32Client", mqtt_user, mqtt_password)) {
       Serial.println("connected");
       // ... and resubscribe
       client.subscribe("siren");
-    }
-    else
-    {
+    } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
@@ -105,8 +95,7 @@ void reconnect()
 }
 
 // A function to read the temperature and humidity from the DHT sensor and serialize it to JSON and return the JSON string
-String readDHT()
-{
+String readDHT() {
   // Read temperature in Celsius and humidity
   float h1 = dht1.readHumidity();
   float t1 = dht1.readTemperature();
@@ -114,8 +103,7 @@ String readDHT()
   float t2 = dht2.readTemperature();
 
   // Check if any reads failed and exit early (to try again).
-  if (isnan(h1) || isnan(t1) || isnan(h2) || isnan(t2))
-  {
+  if (isnan(h1) || isnan(t1) || isnan(h2) || isnan(t2)) {
     Serial.println("Failed to read from DHT sensor!");
     return "failed";
   }
@@ -138,8 +126,7 @@ String readDHT()
   return readings;
 }
 
-void setup()
-{
+void setup() {
   Serial.begin(115200);
   setup_wifi();
   dht1.begin();
@@ -150,27 +137,22 @@ void setup()
   client.setCallback(callback);
 }
 
-void loop()
-{
-  if (!client.connected())
-  {
+void loop() {
+  if (!client.connected()) {
     reconnect();
   }
 
   // Check if 1 second has passed since last check for MQTT messages
-  if (millis() - lastCheck >= 1000)
-  {
+  if (millis() - lastCheck >= 1000) {
     client.loop();
     lastCheck = millis();
   }
 
   // Read temperature and humidity from DHT sensor every 30 seconds
-  if (millis() - lastRead >= 15000)
-  {
+  if (millis() - lastRead >= 15000) {
     String readings = readDHT();
 
-    while (readings == "failed")
-    {
+    while (readings == "failed") {
       readings = readDHT();
     }
 
@@ -180,8 +162,7 @@ void loop()
   }
 
   // Check if OFF button is pressed and turn off led if it is on
-  if (digitalRead(offButtonPin) == LOW && digitalRead(ledPin) == HIGH)
-  {
+  if (digitalRead(offButtonPin) == LOW && digitalRead(ledPin) == HIGH) {
     client.publish("/siren/off", "reset");
     Serial.println("Siren off");
     digitalWrite(ledPin, LOW);
