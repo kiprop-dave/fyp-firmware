@@ -138,6 +138,10 @@ void setup() {
 }
 
 void loop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    setup_wifi();
+  }
+
   if (!client.connected()) {
     reconnect();
   }
