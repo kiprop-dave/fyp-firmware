@@ -4,24 +4,42 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
 
-// Define two pins for DHT sensor
+/*
+ * DHT sensor pins and type
+ * The first pin is for the avian enclosure
+ * The second pin is for the reptile enclosure
+ * The type is the type of DHT sensor
+ */
 #define DHTPIN1 4
 #define DHTPIN2 5
 #define DHTTYPE DHT11
 
-// Initialize DHT sensor.
+/*
+ * Create two DHT objects
+ * The first object is for the avian enclosure
+ * The second object is for the reptile enclosure
+ */
 DHT dht1(DHTPIN1, DHTTYPE);
 DHT dht2(DHTPIN2, DHTTYPE);
 
-// WiFi
+/*
+ * WiFi details
+ * The SSID is the name of the WiFi network
+ * The password is the password for the WiFi network
+ */
 const char *ssid = "<wifi name>";
 const char *password = "<wifi password>";
 
-// MQTT
+/*
+ * MQTT server details
+ * The server address can be an IP address or a domain name
+ * The port is the port that the MQTT server is listening on
+ * The username and password are the credentials for the MQTT server
+ */
 const char *mqtt_server = "<server address>";
-const int mqtt_port = 1883;               // Port number for MQTT server
-const char *mqtt_user = "<username>";     // specific username for MQTT server
-const char *mqtt_password = "<password>"; // specific password for MQTT server
+const int mqtt_port = 1883;
+const char *mqtt_user = "<username>";
+const char *mqtt_password = "<password>";
 
 /*
  * GPIO pins used for LED1,LED2 and button
@@ -53,7 +71,10 @@ void initPins() {
   pinMode(reptileCritical, OUTPUT);
 }
 
-// Timers for MQTT and temperature readings
+/*
+ * Timers for checking MQTT messages and reading DHT sensor
+ * This prevents blocking the main thread by using delay() and allows the ESP32 to handle other tasks
+ */
 unsigned long lastCheck = 0;
 unsigned long lastRead = 0;
 
@@ -111,6 +132,10 @@ String serializeReading(Reading *reading) {
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+/*
+ * A function to handle MQTT messages
+ * It takes a pointer to a char array as an argument
+ */
 void callback(char *topic, byte *payload, unsigned int length) {
   // Check if message says "siren on" and turn on led
 
@@ -161,6 +186,9 @@ String analyzeReading(float reading, String enclosure, String readingType) {
   }
 }
 
+/*
+ * A function to connect to the WiFi network
+ */
 void setup_wifi() {
   delay(10);
   // We start by connecting to a WiFi network
@@ -183,7 +211,9 @@ void setup_wifi() {
   Serial.println(WiFi.localIP());
 }
 
-// connect to MQTT server
+/*
+ * A function to reconnect to the MQTT server
+ */
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
@@ -203,49 +233,22 @@ void reconnect() {
   }
 }
 
-// A function to read the temperature and humidity from the DHT sensor and serialize it to JSON and return the JSON string
-String readDHT() {
-  // Read temperature in Celsius and humidity
-  float h1 = dht1.readHumidity();
-  float t1 = dht1.readTemperature();
-  float h2 = dht2.readHumidity();
-  float t2 = dht2.readTemperature();
-
-  // Check if any reads failed and exit early (to try again).
-  if (isnan(h1) || isnan(t1) || isnan(h2) || isnan(t2)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return "failed";
-  }
-
-  // Create a nested JSON object
-  StaticJsonDocument<200> doc;
-  JsonObject sensorOne = doc.createNestedObject("sensorOne");
-  JsonObject sensorTwo = doc.createNestedObject("sensorTwo");
-
-  // Add values to the object
-  sensorOne["temperature"] = t1;
-  sensorOne["humidity"] = h1;
-  sensorTwo["temperature"] = t2;
-  sensorTwo["humidity"] = h2;
-
-  // Serialize JSON to a string
-  String readings;
-  serializeJson(doc, readings);
-
-  return readings;
-}
-
+/*
+ *Setup function that runs once at the start of the program
+ */
 void setup() {
   Serial.begin(115200);
   setup_wifi();
   dht1.begin();
   dht2.begin();
-  pinMode(ledPin, OUTPUT);
-  pinMode(offButtonPin, INPUT_PULLDOWN);
+  initPins();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
 }
 
+/*
+ *Loop function that runs continuously
+ */
 void loop() {
   if (WiFi.status() != WL_CONNECTED) {
     setup_wifi();
@@ -255,13 +258,13 @@ void loop() {
     reconnect();
   }
 
-  // Check if 1 second has passed since last check for MQTT messages
+  // Check for MQTT messages every second
   if (millis() - lastCheck >= 1000) {
     client.loop();
     lastCheck = millis();
   }
 
-  // Read temperature and humidity from DHT sensor every 30 seconds
+  // Read temperature and humidity from DHT sensor every 15 seconds
   if (millis() - lastRead >= 15000) {
     Reading reading = getReadings();
     String avianTempStatus = analyzeReading(reading.avianTemp, "avian", "temperature");
