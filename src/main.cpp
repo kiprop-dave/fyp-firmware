@@ -33,6 +33,57 @@ const int offButtonPin = 23;
 unsigned long lastCheck = 0;
 unsigned long lastRead = 0;
 
+/*
+ * A struct to hold the readings from the DHT sensors
+ */
+struct Reading {
+  float avianTemp;
+  float avianHumidity;
+  float reptileTemp;
+  float reptileHumidity;
+};
+
+/*
+ * A function to read the temperature and humidity from the DHT sensor and return a Reading struct
+ */
+Reading getReadings() {
+  Reading reading;
+  while (true) {
+    float h1 = dht1.readHumidity();
+    float t1 = dht1.readTemperature();
+    float h2 = dht2.readHumidity();
+    float t2 = dht2.readTemperature();
+    if (!isnan(h1) && !isnan(t1) && !isnan(h2) && !isnan(t2)) {
+      reading.avianTemp = t1;
+      reading.avianHumidity = h1;
+      reading.reptileTemp = t2;
+      reading.reptileHumidity = h2;
+      break;
+    }
+  }
+  return reading;
+}
+
+/*
+ * A function to serialize a Reading struct to JSON and return the JSON string
+ * It takes a pointer to a Reading struct as an argument
+ */
+String serializeReading(Reading *reading) {
+  StaticJsonDocument<200> doc;
+  JsonObject sensorOne = doc.createNestedObject("sensorOne");
+  JsonObject sensorTwo = doc.createNestedObject("sensorTwo");
+  sensorOne["temperature"] = reading->avianTemp;
+  sensorOne["humidity"] = reading->avianHumidity;
+  sensorTwo["temperature"] = reading->reptileTemp;
+  sensorTwo["humidity"] = reading->reptileHumidity;
+  String readings;
+  serializeJson(doc, readings);
+  return readings;
+}
+
+/*
+ *Initialize the PubSubClient class by passing in the WiFiClient object
+ */
 WiFiClient espClient;
 PubSubClient client(espClient);
 
