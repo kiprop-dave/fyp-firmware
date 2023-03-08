@@ -263,7 +263,45 @@ void loop() {
 
   // Read temperature and humidity from DHT sensor every 30 seconds
   if (millis() - lastRead >= 15000) {
-    String readings = readDHT();
+    Reading reading = getReadings();
+    String avianTempStatus = analyzeReading(reading.avianTemp, "avian", "temperature");
+    String avianHumidityStatus = analyzeReading(reading.avianHumidity, "avian", "humidity");
+    String reptileTempStatus = analyzeReading(reading.reptileTemp, "reptile", "temperature");
+    String reptileHumidityStatus = analyzeReading(reading.reptileHumidity, "reptile", "humidity");
+
+    if (avianTempStatus == "warning" || avianHumidityStatus == "warning") {
+      Serial.println("Avian warning");
+      digitalWrite(avianIdealPin, LOW);
+      digitalWrite(avianCritical, LOW);
+      digitalWrite(avianWarning, HIGH);
+    } else if (avianTempStatus == "critical" || avianHumidityStatus == "critical") {
+      Serial.println("Avian critical");
+      digitalWrite(avianIdealPin, LOW);
+      digitalWrite(avianWarning, LOW);
+      digitalWrite(avianCritical, HIGH);
+    } else {
+      Serial.println("Avian ideal");
+      digitalWrite(avianWarning, LOW);
+      digitalWrite(avianCritical, LOW);
+      digitalWrite(avianIdealPin, HIGH);
+    }
+
+    if (reptileTempStatus == "warning" || reptileHumidityStatus == "warning") {
+      Serial.println("Reptile warning");
+      digitalWrite(reptileIdealPin, LOW);
+      digitalWrite(reptileCritical, LOW);
+      digitalWrite(reptileWarning, HIGH);
+    } else if (reptileTempStatus == "critical" || reptileHumidityStatus == "critical") {
+      Serial.println("Reptile critical");
+      digitalWrite(reptileIdealPin, LOW);
+      digitalWrite(reptileWarning, LOW);
+      digitalWrite(reptileCritical, HIGH);
+    } else {
+      Serial.println("Reptile ideal");
+      digitalWrite(reptileWarning, LOW);
+      digitalWrite(reptileCritical, LOW);
+      digitalWrite(reptileIdealPin, HIGH);
+    }
 
     while (readings == "failed") {
       readings = readDHT();
