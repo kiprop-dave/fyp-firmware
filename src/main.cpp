@@ -72,6 +72,12 @@ void initPins() {
 }
 
 /*
+ *A boolean to indicate if server state has been reset at startup
+ */
+
+bool reset = false;
+
+/*
  * Timers for checking MQTT messages and reading DHT sensor
  * This prevents blocking the main thread by using delay() and allows the ESP32 to handle other tasks
  */
@@ -213,6 +219,7 @@ void setup_wifi() {
 
 /*
  * A function to reconnect to the MQTT server
+ *TODO:publish a reset message at startup to reset server state
  */
 void reconnect() {
   // Loop until we're reconnected
@@ -221,8 +228,13 @@ void reconnect() {
     // Attempt to connect
     if (client.connect("ESP32Client", mqtt_user, mqtt_password)) {
       Serial.println("connected");
-      // ... and resubscribe
+      // subscribe to the siren topic
       client.subscribe("siren");
+      // publish a reset message at startup to reset server state
+      if (reset == false) {
+        client.publish("/siren/off", "reset");
+        reset = true;
+      }
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
