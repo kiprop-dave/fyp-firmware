@@ -48,7 +48,41 @@ void callback(char *topic, byte *payload, unsigned int length) {
   }
   if (message == "siren on") {
     Serial.println("Siren on");
-    digitalWrite(ledPin, HIGH);
+    digitalWrite(sirenPin, HIGH);
+  }
+}
+
+/*
+ *A function to check a reading and return if it's "ideal","warning" or "critical"
+ *It takes a float as an argument and a string to indicate the enclosure which can be "avian" or "reptile"
+ *It also takes a readin type that can be "temperature" or "humidity"
+ */
+String analyzeReading(float reading, String enclosure, String readingType) {
+  bool warning = false;
+  bool critical = false;
+  if (enclosure == "avian") {
+    if (readingType == "temperature") {
+      warning = reading < 23 && reading >= 21 || reading > 30 && reading <= 35;
+      critical = reading < 21 || reading > 35;
+    } else {
+      warning = reading < 30 && reading >= 25 || reading > 55 && reading <= 60;
+      critical = reading < 25 || reading > 60;
+    }
+  } else {
+    if (readingType == "temperature") {
+      warning = reading < 22 && reading >= 20 || reading > 28 && reading <= 32;
+      critical = reading < 20 || reading > 35;
+    } else {
+      warning = reading < 30 && reading >= 25 || reading > 70 && reading <= 75;
+      critical = reading < 25 || reading > 75;
+    }
+  }
+  if (warning == true) {
+    return "warning";
+  } else if (critical == true) {
+    return "critical";
+  } else {
+    return "ideal";
   }
 }
 
