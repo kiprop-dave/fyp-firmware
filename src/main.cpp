@@ -23,11 +23,35 @@ const int mqtt_port = 1883;               // Port number for MQTT server
 const char *mqtt_user = "<username>";     // specific username for MQTT server
 const char *mqtt_password = "<password>"; // specific password for MQTT server
 
-// Define led pin
-const int ledPin = 2;
+/*
+ * GPIO pins used for LED1,LED2 and button
+ * LED connected to sirenPin simulates a siren
+ * Button is used to turn off the siren
+ * LED connected to avianIdealPin, avianWarning and avianCritical indicate the status of the avian enclosure
+ * LED connected to reptileIdealPin, reptileWarning and reptileCritical indicate the status of the reptile enclosure
+ */
+const uint8_t sirenPin = 2;
+const uint8_t offButtonPin = 23;
+const uint8_t avianIdealPin = 18;
+const uint8_t avianWarning = 19;
+const uint8_t avianCritical = 21;
+const uint8_t reptileIdealPin = 13;
+const uint8_t reptileWarning = 12;
+const uint8_t reptileCritical = 14;
 
-// Define OFF button pin
-const int offButtonPin = 23;
+/*
+ * A function to initialize all the pins
+ */
+void initPins() {
+  pinMode(sirenPin, OUTPUT);
+  pinMode(offButtonPin, INPUT_PULLDOWN);
+  pinMode(avianIdealPin, OUTPUT);
+  pinMode(avianWarning, OUTPUT);
+  pinMode(avianCritical, OUTPUT);
+  pinMode(reptileIdealPin, OUTPUT);
+  pinMode(reptileWarning, OUTPUT);
+  pinMode(reptileCritical, OUTPUT);
+}
 
 // Timers for MQTT and temperature readings
 unsigned long lastCheck = 0;
