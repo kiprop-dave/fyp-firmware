@@ -303,19 +303,33 @@ void loop() {
       digitalWrite(reptileIdealPin, HIGH);
     }
 
-    while (readings == "failed") {
-      readings = readDHT();
+    /*
+     *Turn off the siren if the avian and reptile enclosures are ideal and the siren is on
+     *This automates the process of turning off the siren and does not require the user to press the off button
+     */
+    if (digitalRead(sirenPin) == HIGH) {
+      bool avianIdeal = digitalRead(avianIdealPin) == HIGH;
+      bool reptileIdeal = digitalRead(reptileIdealPin) == HIGH;
+      if (avianIdeal && reptileIdeal) {
+        client.publish("/siren/off", "reset");
+        Serial.println("Siren off");
+        digitalWrite(sirenPin, LOW);
+      }
     }
 
-    // Publish readings to MQTT
-    client.publish("readings", readings.c_str());
+    String stringifiedReading = serializeReading(&reading);
+    client.publish("readings", stringifiedReading.c_str());
     lastRead = millis();
   }
 
-  // Check if OFF button is pressed and turn off led if it is on
-  if (digitalRead(offButtonPin) == LOW && digitalRead(ledPin) == HIGH) {
-    client.publish("/siren/off", "reset");
-    Serial.println("Siren off");
-    digitalWrite(ledPin, LOW);
+  // Turn the siren off if the off button is pressed and if avian and reptile enclosures are ideal
+  if (digitalRead(offButtonPin) == LOW && digitalRead(sirenPin) == HIGH) {
+    bool avianIdeal = digitalRead(avianIdealPin) == HIGH;
+    bool reptileIdeal = digitalRead(reptileIdealPin) == HIGH;
+    if (avianIdeal && reptileIdeal) {
+      client.publish("/siren/off", "reset");
+      Serial.println("Siren off");
+      digitalWrite(sirenPin, LOW);
+    }
   }
 }
