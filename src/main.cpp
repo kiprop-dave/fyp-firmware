@@ -37,7 +37,7 @@ const char *password = "<wifi password>";
  * The username and password are the credentials for the MQTT server
  */
 const char *mqtt_server = "<server address>";
-const int mqtt_port = 1883;
+const uint16_t mqtt_port = 1883;
 const char *mqtt_user = "<username>";
 const char *mqtt_password = "<password>";
 
@@ -218,11 +218,10 @@ void setup_wifi() {
 }
 
 /*
- * A function to reconnect to the MQTT server
- *TODO:publish a reset message at startup to reset server state
+ * A function to connect to the MQTT server
  */
-void reconnect() {
-  // Loop until we're reconnected
+void connectMqtt() {
+  // Loop until the connection is established
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
@@ -262,12 +261,13 @@ void setup() {
  *Loop function that runs continuously
  */
 void loop() {
+  // Reconnect to WiFi if connection is lost
   if (WiFi.status() != WL_CONNECTED) {
     setup_wifi();
   }
 
   if (!client.connected()) {
-    reconnect();
+    connectMqtt();
   }
 
   // Check for MQTT messages every second
