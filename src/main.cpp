@@ -19,8 +19,8 @@
  * The first object is for the avian enclosure
  * The second object is for the reptile enclosure
  */
-DHT dht1(DHTPIN1, DHTTYPE);
-DHT dht2(DHTPIN2, DHTTYPE);
+DHT dhtAvian(DHTPIN1, DHTTYPE);
+DHT dhtReptilian(DHTPIN2, DHTTYPE);
 
 /*
  * WiFi details
@@ -37,9 +37,9 @@ const char *password = "<wifi password>";
  * The username and password are the credentials for the MQTT server
  */
 const char *mqtt_server = "<server address>";
-const uint16_t mqtt_port = 1883;
 const char *mqtt_user = "<username>";
 const char *mqtt_password = "<password>";
+const uint16_t mqtt_port = 1883;
 
 /*
  * GPIO pins used for LED1,LED2 and button
@@ -74,7 +74,6 @@ void initPins() {
 /*
  *A boolean to indicate if server state has been reset at startup
  */
-
 bool reset = false;
 
 /*
@@ -100,10 +99,10 @@ struct Reading {
 Reading getReadings() {
   Reading reading;
   while (true) {
-    float h1 = dht1.readHumidity();
-    float t1 = dht1.readTemperature();
-    float h2 = dht2.readHumidity();
-    float t2 = dht2.readTemperature();
+    float h1 = dhtAvian.readHumidity();
+    float t1 = dhtAvian.readTemperature();
+    float h2 = dhtReptilian.readHumidity();
+    float t2 = dhtReptilian.readTemperature();
     if (!isnan(h1) && !isnan(t1) && !isnan(h2) && !isnan(t2)) {
       reading.avianTemp = t1;
       reading.avianHumidity = h1;
@@ -140,7 +139,9 @@ PubSubClient client(espClient);
 
 /*
  * A function to handle MQTT messages
- * It takes a pointer to a char array as an argument
+ * It takes three arguments: a pointer to a char array representing the topic of the message,
+ * a byte array representing the payload of the message,
+ * and an unsigned integer representing the length of the payload.
  */
 void callback(char *topic, byte *payload, unsigned int length) {
   // Check if message says "siren on" and turn on led
@@ -161,7 +162,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
 /*
  *A function to check a reading and return if it's "ideal","warning" or "critical"
  *It takes a float as an argument and a string to indicate the enclosure which can be "avian" or "reptile"
- *It also takes a readin type that can be "temperature" or "humidity"
+ *It also takes a reading type that can be "temperature" or "humidity"
  */
 String analyzeReading(float reading, String enclosure, String readingType) {
   bool warning = false;
@@ -196,8 +197,6 @@ String analyzeReading(float reading, String enclosure, String readingType) {
  * A function to connect to the WiFi network
  */
 void setup_wifi() {
-  delay(10);
-  // We start by connecting to a WiFi network
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -209,7 +208,7 @@ void setup_wifi() {
     Serial.print(".");
   }
 
-  randomSeed(micros());
+  // randomSeed(micros());
 
   Serial.println("");
   Serial.println("WiFi connected");
@@ -250,11 +249,12 @@ void connectMqtt() {
 void setup() {
   Serial.begin(115200);
   setup_wifi();
-  dht1.begin();
-  dht2.begin();
+  dhtAvian.begin();
+  dhtReptilian.begin();
   initPins();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
+  connectMqtt();
 }
 
 /*
