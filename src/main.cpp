@@ -53,9 +53,9 @@ const uint8_t offButtonPin = 23;
 const uint8_t avianIdealPin = 18;
 const uint8_t avianWarning = 19;
 const uint8_t avianCritical = 21;
-const uint8_t reptileIdealPin = 13;
-const uint8_t reptileWarning = 12;
-const uint8_t reptileCritical = 14;
+const uint8_t reptileIdealPin = 27;
+const uint8_t reptileWarning = 26;
+const uint8_t reptileCritical = 25;
 
 /*
  * A function to initialize all the pins
@@ -184,10 +184,10 @@ String analyzeReading(float reading, String enclosure, String readingType) {
       critical = reading < 25 || reading > 75;
     }
   }
-  if (warning == true) {
-    return "warning";
-  } else if (critical == true) {
+  if (critical == true) {
     return "critical";
+  } else if (warning == true) {
+    return "warning";
   } else {
     return "ideal";
   }
@@ -207,8 +207,6 @@ void setup_wifi() {
     delay(500);
     Serial.print(".");
   }
-
-  // randomSeed(micros());
 
   Serial.println("");
   Serial.println("WiFi connected");
@@ -284,16 +282,16 @@ void loop() {
     String reptileTempStatus = analyzeReading(reading.reptileTemp, "reptile", "temperature");
     String reptileHumidityStatus = analyzeReading(reading.reptileHumidity, "reptile", "humidity");
 
-    if (avianTempStatus == "warning" || avianHumidityStatus == "warning") {
-      Serial.println("Avian warning");
-      digitalWrite(avianIdealPin, LOW);
-      digitalWrite(avianCritical, LOW);
-      digitalWrite(avianWarning, HIGH);
-    } else if (avianTempStatus == "critical" || avianHumidityStatus == "critical") {
+    if (avianTempStatus == "critical" || avianHumidityStatus == "critical") {
       Serial.println("Avian critical");
       digitalWrite(avianIdealPin, LOW);
       digitalWrite(avianWarning, LOW);
       digitalWrite(avianCritical, HIGH);
+    } else if (avianTempStatus == "warning" || avianHumidityStatus == "warning") {
+      Serial.println("Avian warning");
+      digitalWrite(avianIdealPin, LOW);
+      digitalWrite(avianWarning, HIGH);
+      digitalWrite(avianCritical, LOW);
     } else {
       Serial.println("Avian ideal");
       digitalWrite(avianWarning, LOW);
@@ -301,16 +299,16 @@ void loop() {
       digitalWrite(avianIdealPin, HIGH);
     }
 
-    if (reptileTempStatus == "warning" || reptileHumidityStatus == "warning") {
-      Serial.println("Reptile warning");
-      digitalWrite(reptileIdealPin, LOW);
-      digitalWrite(reptileCritical, LOW);
-      digitalWrite(reptileWarning, HIGH);
-    } else if (reptileTempStatus == "critical" || reptileHumidityStatus == "critical") {
+    if (reptileTempStatus == "critical" || reptileHumidityStatus == "critical") {
       Serial.println("Reptile critical");
       digitalWrite(reptileIdealPin, LOW);
       digitalWrite(reptileWarning, LOW);
       digitalWrite(reptileCritical, HIGH);
+    } else if (reptileTempStatus == "warning" || reptileHumidityStatus == "warning") {
+      Serial.println("Reptile warning");
+      digitalWrite(reptileIdealPin, LOW);
+      digitalWrite(reptileWarning, HIGH);
+      digitalWrite(reptileCritical, LOW);
     } else {
       Serial.println("Reptile ideal");
       digitalWrite(reptileWarning, LOW);
@@ -321,14 +319,24 @@ void loop() {
     /*
      *Turn off the siren if the avian and reptile enclosures are ideal and the siren is on
      *This automates the process of turning off the siren and does not require the user to press the off button
+     *Also turn on the siren if the avian or reptile enclosures are critical and the siren is off
      */
-    if (digitalRead(sirenPin) == HIGH) {
+    bool sirenOn = digitalRead(sirenPin) == HIGH;
+    if (sirenOn) {
       bool avianIdeal = digitalRead(avianIdealPin) == HIGH;
       bool reptileIdeal = digitalRead(reptileIdealPin) == HIGH;
       if (avianIdeal && reptileIdeal) {
         client.publish("/siren/off", "reset");
         Serial.println("Siren off");
         digitalWrite(sirenPin, LOW);
+      }
+    }
+    if (!sirenOn) {
+      bool avianEncCritical = digitalRead(avianCritical) == HIGH;
+      bool reptileEnvCritical = digitalRead(reptileCritical) == HIGH;
+      if (avianEncCritical || reptileEnvCritical) {
+        Serial.println("Siren on");
+        digitalWrite(sirenPin, HIGH);
       }
     }
 
