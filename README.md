@@ -4,13 +4,13 @@ This code is for an ESP32-based IoT project that monitors temperature and humidi
 one for birds and one for reptiles. The code uses two DHT sensors to obtain temperature and humidity readings
 and sends the data to an MQTT server over WiFi. The code also controls LEDs to indicate the status of the enclosures
 and simulates a siren with another LED. There is also a push button that can stop the siren. The project uses platformio as
-a toolchain. Visit the platformio website [here]("https://platformio.org/") to get started.
+a toolchain. Visit the platformio website [here](https://platformio.org/) to get started.
 
 This is part of a bigger project for my electrical enginnering final year project titled "real-time web based monitor/alert system for a small wildlife preserve hatchery".
 The otherbuilding blocks of the project are a client web application and a server. Their codebases are found here:
 
-- [client web applicaion]("https://github.com/kiprop-dave/fyp-webClient")
-- [server]("https://github.com/kiprop-dave/fyp-server")
+- [client web application](https://github.com/kiprop-dave/fyp-webClient)
+- [server](https://github.com/kiprop-dave/fyp-server)
 
 ## Dependencies
 
