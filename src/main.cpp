@@ -3,6 +3,7 @@
 #include <DHT.h>
 #include <PubSubClient.h>
 #include <WiFi.h>
+#include <WifiConfig.h>
 
 /*
  * DHT sensor pins and type
@@ -21,14 +22,6 @@
  */
 DHT dhtAvian(DHTPIN1, DHTTYPE);
 DHT dhtReptilian(DHTPIN2, DHTTYPE);
-
-/*
- * WiFi details
- * The SSID is the name of the WiFi network
- * The password is the password for the WiFi network
- */
-const char *ssid = "<wifi name>";
-const char *password = "<wifi password>";
 
 /*
  * MQTT server details
@@ -194,27 +187,6 @@ String analyzeReading(float reading, String enclosure, String readingType) {
 }
 
 /*
- * A function to connect to the WiFi network
- */
-void setup_wifi() {
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}
-
-/*
  * A function to connect to the MQTT server
  */
 void connectMqtt() {
@@ -246,7 +218,7 @@ void connectMqtt() {
  */
 void setup() {
   Serial.begin(115200);
-  setup_wifi();
+  wifi_config();
   dhtAvian.begin();
   dhtReptilian.begin();
   initPins();
@@ -261,7 +233,7 @@ void setup() {
 void loop() {
   // Reconnect to WiFi if connection is lost
   if (WiFi.status() != WL_CONNECTED) {
-    setup_wifi();
+    wifi_config();
   }
 
   if (!client.connected()) {
