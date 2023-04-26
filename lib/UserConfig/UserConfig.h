@@ -1,6 +1,7 @@
-#ifndef WifiConfig_h
-#define WifiConfig_h
+#ifndef UserConfig_h
+#define UserConfig_h
 #include <Arduino.h>
+#include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
 #include <WiFi.h>
 

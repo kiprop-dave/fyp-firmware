@@ -2,8 +2,8 @@
 #include <ArduinoJson.h>
 #include <DHT.h>
 #include <PubSubClient.h>
+#include <UserConfig.h>
 #include <WiFi.h>
-#include <WifiConfig.h>
 
 /*
  * DHT sensor pins and type
