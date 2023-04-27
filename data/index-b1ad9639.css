@@ -1,0 +1,58 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+button {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 600;
+  font-size: 1.2rem;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+.header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  justify-content: center;
+  background-color: #f0f8ff;
+}
+.header {
+  font-size: 20px;
+}
+.form-wrapper {
+  margin: 0 1rem;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  margin: 0 0 1rem;
+  border: solid 1px blue;
+}
+.form > input {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  height: 2rem;
+  border: solid 1px blue;
+}
+.enclosure-wrapper {
+  display: flex;
+  padding: 1rem;
+  margin: 0 0 1rem;
+  border: solid 1px blue;
+}
+.enclosure-label {
+  font-size: 20px;
+  text-decoration: underline;
+}
+@media screen and (max-width: 768px) {
+  .enclosure-wrapper {
+    flex-direction: column;
+  }
+}
