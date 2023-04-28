@@ -20,6 +20,8 @@ ApplicationReading::ApplicationReading() {
  *The method copies the data from the struct into the private variable of the class.
  */
 void ApplicationReading::set_status(readingStatus *status) {
+  Serial.print("Setting status,decision: ");
+  Serial.println(status->decision);
   memcpy(&this->status, status, sizeof(readingStatus));
 }
 
