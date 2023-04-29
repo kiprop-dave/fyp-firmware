@@ -6,18 +6,25 @@
 #include <UserConfig.h>        // This is used to configure the wifi credentials and the limits for the readings
 #include <WiFi.h>
 
-// Initialize the reading class
+/*
+ *Initialize the reading class
+ *This class is used to create and stringify the readings
+ */
 ApplicationReading application_reading;
-
-// Initialize the limits for the readings and a pin to allow the user to set the limits
+/*
+ *Initialize the limits that will be used to check the readings and determine the status of the enclosures
+ */
 ApplicationLimits application_limits;
-const uint8_t setLimitsPin = 23;
 
-// A fuction to set the limits for the readings
+/*
+ * A function to check if the limits file exists
+ *if the limits file exists, the limits are set and the server is ended
+ *if the limits file does not exist, the get_limits() function is called
+ *The get_limits() function starts the server and waits for the user to set the limits
+ */
 void setLimits() {
   bool file_exists = limits_file_exists();
   Serial.println("Checking if limits file exists");
-  Serial.println(file_exists);
   if (file_exists) {
     Limits limits = read_limits_from_file();
     application_limits.set_limits(&limits);
@@ -56,17 +63,18 @@ const char *mqtt_server = "192.168.100.68";
 const char *mqtt_user = "<username>";
 const char *mqtt_password = "<password>";
 const uint16_t mqtt_port = 1883;
-const uint8_t reset_wifi_pin = 15;
 
 /*
  * GPIO pins used for LED1,LED2 and button
  * LED connected to sirenPin simulates a siren
- * Button is used to turn off the siren
+ * The reset_wifi_pin is used to reset the WiFi credentials
+ * The setLimitsPin is used to delete the limits and set new limits
  * LED connected to avianIdealPin, avianWarning and avianCritical indicate the status of the avian enclosure
  * LED connected to reptileIdealPin, reptileWarning and reptileCritical indicate the status of the reptile enclosure
  */
+const uint8_t reset_wifi_pin = 15;
+const uint8_t setLimitsPin = 23;
 const uint8_t sirenPin = 2;
-// const uint8_t offButtonPin = 23;
 const uint8_t avianIdealPin = 18;
 const uint8_t avianWarning = 19;
 const uint8_t avianCritical = 21;
@@ -79,7 +87,6 @@ const uint8_t reptileCritical = 25;
  */
 void initPins() {
   pinMode(sirenPin, OUTPUT);
-  // pinMode(offButtonPin, INPUT_PULLDOWN);
   pinMode(avianIdealPin, OUTPUT);
   pinMode(avianWarning, OUTPUT);
   pinMode(avianCritical, OUTPUT);
@@ -87,6 +94,7 @@ void initPins() {
   pinMode(reptileWarning, OUTPUT);
   pinMode(reptileCritical, OUTPUT);
   pinMode(setLimitsPin, INPUT_PULLDOWN);
+  pinMode(reset_wifi_pin, INPUT_PULLDOWN);
 }
 
 /*
@@ -141,23 +149,6 @@ Reading getReadings() {
 }
 
 /*
- * A function to serialize a Reading struct to JSON and return the JSON string
- * It takes a pointer to a Reading struct as an argument
- */
-String serializeReading(Reading *reading) {
-  StaticJsonDocument<200> doc;
-  JsonObject sensorOne = doc.createNestedObject("sensorOne");
-  JsonObject sensorTwo = doc.createNestedObject("sensorTwo");
-  sensorOne["temperature"] = reading->avianTemp;
-  sensorOne["humidity"] = reading->avianHumidity;
-  sensorTwo["temperature"] = reading->reptileTemp;
-  sensorTwo["humidity"] = reading->reptileHumidity;
-  String readings;
-  serializeJson(doc, readings);
-  return readings;
-}
-
-/*
  *Initialize the PubSubClient class by passing in the WiFiClient object
  */
 WiFiClient espClient;
@@ -185,13 +176,23 @@ void callback(char *topic, byte *payload, unsigned int length) {
   }
 }
 
+/*
+ * A function to set the reading property of the application_reading object
+ *The status object looks like this:
+ * {
+ *  "decision": "ideal",
+ * "enclosure": [
+ *  "avian",
+ * "temperature"
+ * ],
+ * }
+ * It takes five arguments: a pointer to a char array representing the enclosure,
+ * a pointer to a char array representing the measurement,
+ * a boolean representing if the reading is a warning,
+ * a boolean representing if the reading is critical,
+ * and a pointer to an unsigned integer representing the severity of the reading.
+ */
 void set_reading_status(char *enclosure, char *measurement, bool warning, bool critical, uint8_t *severity) {
-  Serial.print("Enclosure: ");
-  Serial.println(enclosure);
-  Serial.print("Measurement: ");
-  Serial.println(measurement);
-  Serial.print("severity: ");
-  Serial.println(*severity);
   readingStatus status;
   if (!warning && !critical && *severity == 0) {
     *severity = 0;
@@ -227,6 +228,8 @@ void set_reading_status(char *enclosure, char *measurement, bool warning, bool c
  *A function to check a reading and return if it's "ideal","warning" or "critical"
  *It takes a float as an argument and a string to indicate the enclosure which can be "avian" or "reptile"
  *It also takes a reading type that can be "temperature" or "humidity"
+ *It also takes a pointer to a uint8_t to indicate the severity of the reading
+ *severity ensures that the status is not downgraded and only set to the highest severity
  */
 String analyzeReading(float reading, char *enclosure, char *readingType, uint8_t *severity) {
   bool warning = false;
@@ -330,6 +333,7 @@ void loop() {
   // Reconnect to WiFi if connection is lost
   if (WiFi.status() != WL_CONNECTED) {
     wifi_config();
+    delay(2000);
     return;
   }
 
@@ -366,7 +370,7 @@ void loop() {
   if (millis() - lastRead >= 15000) {
     Reading reading = getReadings();
     char avian_char[] = "avian";
-    char reptile_char[] = "reptile";
+    char reptile_char[] = "reptilian";
     char temperature_char[] = "temperature";
     char humidity_char[] = "humidity";
     uint8_t severity = 0; // 0 = ideal, 1 = warning, 2 = critical
@@ -435,17 +439,7 @@ void loop() {
 
     String stringifiedReading = application_reading.stringify_reading();
     client.publish("readings", stringifiedReading.c_str());
+    application_reading.reset();
     lastRead = millis();
   }
-
-  // Turn the siren off if the off button is pressed and if avian and reptile enclosures are ideal
-  // if (digitalRead(offButtonPin) == LOW && digitalRead(sirenPin) == HIGH) {
-  //   bool avianIdeal = digitalRead(avianIdealPin) == HIGH;
-  //   bool reptileIdeal = digitalRead(reptileIdealPin) == HIGH;
-  //   if (avianIdeal && reptileIdeal) {
-  //     client.publish("/siren/off", "reset");
-  //     Serial.println("Siren off");
-  //     digitalWrite(sirenPin, LOW);
-  //   }
-  // }
 }

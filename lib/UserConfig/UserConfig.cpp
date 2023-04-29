@@ -143,6 +143,7 @@ void wifi_config() {
 }
 
 // A function to read a json file and return a char pointer
+// Do not forget to free the memory after using the char pointer
 char *read_file_json(fs::FS &fs, const char *path) {
   Serial.printf("Reading file: %s\r\n", path);
 
