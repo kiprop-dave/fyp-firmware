@@ -31,7 +31,7 @@ void setLimits() {
     server.end();
   } else {
     get_limits();
-    delay(2000);
+    delay(3000);
   }
 }
 
@@ -59,9 +59,9 @@ DHT dhtReptilian(DHTPIN2, DHTTYPE);
  * The port is the port that the MQTT server is listening on
  * The username and password are the credentials for the MQTT server
  */
-const char *mqtt_server = "192.168.100.68";
-const char *mqtt_user = "<username>";
-const char *mqtt_password = "<password>";
+const char *mqtt_server = "102.37.222.104";
+const char *mqtt_user = "esp_client";
+const char *mqtt_password = "skyWalker";
 const uint16_t mqtt_port = 1883;
 
 /*
@@ -81,6 +81,7 @@ const uint8_t avianCritical = 21;
 const uint8_t reptileIdealPin = 27;
 const uint8_t reptileWarning = 26;
 const uint8_t reptileCritical = 25;
+const uint8_t stop_siren = 22;
 
 /*
  * A function to initialize all the pins
@@ -93,8 +94,9 @@ void initPins() {
   pinMode(reptileIdealPin, OUTPUT);
   pinMode(reptileWarning, OUTPUT);
   pinMode(reptileCritical, OUTPUT);
-  pinMode(setLimitsPin, INPUT_PULLDOWN);
-  pinMode(reset_wifi_pin, INPUT_PULLDOWN);
+  pinMode(setLimitsPin, INPUT_PULLUP);
+  pinMode(reset_wifi_pin, INPUT_PULLUP);
+  pinMode(stop_siren, INPUT_PULLUP);
 }
 
 /*
@@ -333,7 +335,7 @@ void loop() {
   // Reconnect to WiFi if connection is lost
   if (WiFi.status() != WL_CONNECTED) {
     wifi_config();
-    delay(2000);
+    delay(3000);
     return;
   }
 
@@ -441,5 +443,16 @@ void loop() {
     client.publish("readings", stringifiedReading.c_str());
     application_reading.reset();
     lastRead = millis();
+  }
+
+  // Turn off the siren if the stop button is pressed and the both enclosures are not critical
+  if (digitalRead(stop_siren) == LOW && digitalRead(sirenPin) == HIGH) {
+    bool avian_critical = digitalRead(avianCritical) == HIGH;
+    bool reptile_critical = digitalRead(reptileCritical) == HIGH;
+    if (!avian_critical && !reptile_critical) {
+      client.publish("/siren/off", "reset");
+      Serial.println("Siren off");
+      digitalWrite(sirenPin, LOW);
+    }
   }
 }
