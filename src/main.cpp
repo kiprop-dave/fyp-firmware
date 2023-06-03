@@ -28,10 +28,15 @@ void setLimits() {
   if (file_exists) {
     Limits limits = read_limits_from_file();
     application_limits.set_limits(&limits);
-    server.end();
+    if (server_running) {
+      server.end();
+      server_running = false;
+    }
   } else {
-    get_limits();
-    delay(3000);
+    if (!server_running) {
+      get_limits();
+    }
+    delay(3500);
   }
 }
 
@@ -42,7 +47,7 @@ void setLimits() {
  * The type is the type of DHT sensor
  */
 #define DHTPIN1 4
-#define DHTPIN2 5
+#define DHTPIN2 13
 #define DHTTYPE DHT11
 
 /*
@@ -59,9 +64,9 @@ DHT dhtReptilian(DHTPIN2, DHTTYPE);
  * The port is the port that the MQTT server is listening on
  * The username and password are the credentials for the MQTT server
  */
-const char *mqtt_server = "102.37.222.104";
-const char *mqtt_user = "esp_client";
-const char *mqtt_password = "skyWalker";
+const char *mqtt_server = "192.168.100.68";
+const char *mqtt_user = "<username>";
+const char *mqtt_password = "<password>";
 const uint16_t mqtt_port = 1883;
 
 /*
@@ -75,9 +80,9 @@ const uint16_t mqtt_port = 1883;
 const uint8_t reset_wifi_pin = 15;
 const uint8_t setLimitsPin = 23;
 const uint8_t sirenPin = 2;
-const uint8_t avianIdealPin = 18;
+const uint8_t avianIdealPin = 21;
 const uint8_t avianWarning = 19;
-const uint8_t avianCritical = 21;
+const uint8_t avianCritical = 18;
 const uint8_t reptileIdealPin = 27;
 const uint8_t reptileWarning = 26;
 const uint8_t reptileCritical = 25;
@@ -97,6 +102,19 @@ void initPins() {
   pinMode(setLimitsPin, INPUT_PULLUP);
   pinMode(reset_wifi_pin, INPUT_PULLUP);
   pinMode(stop_siren, INPUT_PULLUP);
+}
+
+/*
+ * A function to turn off all the LEDs
+ */
+void turn_off_leds() {
+  digitalWrite(avianIdealPin, LOW);
+  digitalWrite(avianWarning, LOW);
+  digitalWrite(avianCritical, LOW);
+  digitalWrite(reptileIdealPin, LOW);
+  digitalWrite(reptileWarning, LOW);
+  digitalWrite(reptileCritical, LOW);
+  digitalWrite(sirenPin, LOW);
 }
 
 /*
@@ -334,8 +352,10 @@ void setup() {
 void loop() {
   // Reconnect to WiFi if connection is lost
   if (WiFi.status() != WL_CONNECTED) {
-    wifi_config();
-    delay(3000);
+    if (!server_running) {
+      wifi_config();
+    }
+    delay(3500);
     return;
   }
 
@@ -349,6 +369,7 @@ void loop() {
   }
 
   if (digitalRead(setLimitsPin) == LOW) {
+    turn_off_leds();
     delete_file_abstraction("/limits.json");
     application_limits.reset_limits();
     setLimits();
@@ -356,6 +377,7 @@ void loop() {
   }
 
   if (digitalRead(reset_wifi_pin) == LOW) {
+    turn_off_leds();
     delete_file_abstraction("/wifi.txt ");
     delete_file_abstraction("/password.txt");
     wifi_config();
@@ -447,6 +469,7 @@ void loop() {
 
   // Turn off the siren if the stop button is pressed and the both enclosures are not critical
   if (digitalRead(stop_siren) == LOW && digitalRead(sirenPin) == HIGH) {
+    Serial.println("Siren off");
     bool avian_critical = digitalRead(avianCritical) == HIGH;
     bool reptile_critical = digitalRead(reptileCritical) == HIGH;
     if (!avian_critical && !reptile_critical) {

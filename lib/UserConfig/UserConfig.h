@@ -14,6 +14,7 @@ void delete_file_abstraction(const char *path);
 bool wifi_connected(String ssid, String password);
 void wifi_config();
 extern AsyncWebServer server;
+extern bool server_running;
 
 struct Limits {
   uint16_t avian_temp_limits[4];

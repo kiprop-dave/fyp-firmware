@@ -7,6 +7,7 @@
 
 // Set web server port number to 80
 AsyncWebServer server(80);
+bool server_running = false; // keep track of whether the server is running to prevent multiple server.begin() calls which makes it unpredictable
 
 void init_spiffs() {
   if (!SPIFFS.begin(true)) {
@@ -103,7 +104,10 @@ void wifi_config() {
   bool connected = wifi_connected(ssid, password);
   if (connected) {
     Serial.println("WiFi connected successfully");
-    server.end();
+    if (server_running) {
+      server.end();
+      server_running = false;
+    }
   } else {
     Serial.println("WiFi connection failed");
     Serial.println("Starting access point");
@@ -138,7 +142,10 @@ void wifi_config() {
       // Restart ESP32
       ESP.restart();
     });
+    server_running = true;
     server.begin();
+    Serial.println("Server started, visit");
+    Serial.println(WiFi.softAPIP());
   }
 }
 
@@ -291,6 +298,7 @@ void get_limits() {
       parse_body);
 
   server.begin();
+  server_running = true;
 }
 
 // Parse the request body

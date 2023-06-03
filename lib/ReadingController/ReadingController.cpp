@@ -57,7 +57,7 @@ String ApplicationReading::stringify_reading() {
   strncpy(enclosure0, this->status.enclosure[0], sizeof(enclosure0) - 1);
   enclosure0[sizeof(enclosure0) - 1] = '\0';
   enclosure.add(enclosure0);
-  char enclosure1[10];
+  char enclosure1[15];
   strncpy(enclosure1, this->status.enclosure[1], sizeof(enclosure1) - 1);
   enclosure1[sizeof(enclosure1) - 1] = '\0';
   enclosure.add(enclosure1);
